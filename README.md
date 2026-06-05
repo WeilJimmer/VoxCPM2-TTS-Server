@@ -90,15 +90,16 @@ Everything lives in [`config.yaml`](config.yaml). The most relevant knobs:
 | `model.cudnn_enabled` | Set `false` to bypass cuDNN (see Troubleshooting). |
 | `model.matmul_precision` | `high` = TF32 (faster), `highest` = full fp32. |
 
-A few deploy-time values can also be overridden by env vars (handy for keeping
-**one shared `config.yaml`** across machines and differing only via env):
-`VOXTTS_HOST`, `VOXTTS_PORT`, `VOXTTS_API_KEY`, `VOXTTS_MODEL`, `VOXTTS_HF_HOME`,
-`VOXTTS_DEVICE`, `VOXTTS_SEED`, `VOXTTS_OPTIMIZE` (0/1), `VOXTTS_CUDNN` (0/1),
-`VOXTTS_MATMUL_PRECISION`.
+**Every** config field has a `VOXTTS_*` env override (so one shared
+`config.yaml` can be tuned per-machine without editing the tracked file) —
+including the voice and generation params: `VOXTTS_VOICE_PROMPT`,
+`VOXTTS_VOICE_PROMPT_SEPARATOR`, `VOXTTS_REFERENCE_WAV`, `VOXTTS_REFERENCE_TEXT`,
+`VOXTTS_SEED`, `VOXTTS_CFG_VALUE`, `VOXTTS_INFERENCE_TIMESTEPS`,
+`VOXTTS_NORMALIZE`, `VOXTTS_DENOISE`, `VOXTTS_RETRY_BADCASE`, `VOXTTS_MAX_CHARS`,
+… The full list with examples is in [`.env.example`](.env.example).
 
 These can live in a **`.env`** in the project root (loaded automatically at
-startup via python-dotenv; real shell env vars still win). Copy the template
-and uncomment the block for your machine:
+startup via python-dotenv; real shell env vars still win):
 
 ```bash
 cp .env.example .env   # then edit — GB10 and Windows presets are inside

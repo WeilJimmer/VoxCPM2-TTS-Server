@@ -92,12 +92,9 @@ class Config:
     generation: GenerationConfig = field(default_factory=GenerationConfig)
 
 
-def _coerce_int(value, fallback):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return fallback
-
+# ── Env-var coercers ────────────────────────────────────────────────
+# Each takes (raw_env_string, current_value) and returns the parsed value,
+# falling back to current on parse errors.
 
 def _coerce_bool(value, fallback):
     if value is None:
@@ -105,36 +102,88 @@ def _coerce_bool(value, fallback):
     v = str(value).strip().lower()
     if v in ("1", "true", "yes", "on"):
         return True
-    if v in ("0", "false", "no", "off", ""):
+    if v in ("0", "false", "no", "off"):
         return False
     return fallback
 
 
+def _as_str(raw, cur):          # exact value, whitespace preserved (e.g. " ")
+    return raw
+
+
+def _as_str_or_none(raw, cur):  # empty/blank → None (disable)
+    s = raw.strip()
+    return s if s else None
+
+
+def _as_int(raw, cur):
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return cur
+
+
+def _as_int_or_none(raw, cur):
+    if raw.strip() == "":
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return cur
+
+
+def _as_float(raw, cur):
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return cur
+
+
+def _as_csv_list(raw, cur):
+    items = [s.strip() for s in raw.split(",") if s.strip()]
+    return items or cur
+
+
+# (env var, config section, field, coercer). Covers EVERY config field.
+_ENV_MAP = [
+    # server
+    ("VOXTTS_HOST",                          "server",     "host",                          _as_str),
+    ("VOXTTS_PORT",                          "server",     "port",                          _as_int),
+    ("VOXTTS_API_KEY",                       "server",     "api_key",                       _as_str_or_none),
+    ("VOXTTS_CORS_ORIGINS",                  "server",     "cors_origins",                  _as_csv_list),
+    # model
+    ("VOXTTS_MODEL",                         "model",      "name",                          _as_str),
+    ("VOXTTS_HF_HOME",                       "model",      "hf_home",                       _as_str_or_none),
+    ("VOXTTS_DEVICE",                        "model",      "device",                        _as_str_or_none),
+    ("VOXTTS_LOAD_DENOISER",                 "model",      "load_denoiser",                 _coerce_bool),
+    ("VOXTTS_OPTIMIZE",                      "model",      "optimize",                      _coerce_bool),
+    ("VOXTTS_CUDNN",                         "model",      "cudnn_enabled",                 _coerce_bool),
+    ("VOXTTS_MATMUL_PRECISION",              "model",      "matmul_precision",              _as_str_or_none),
+    # voice
+    ("VOXTTS_VOICE_PROMPT",                  "voice",      "prompt",                        _as_str),
+    ("VOXTTS_VOICE_PROMPT_SEPARATOR",        "voice",      "prompt_separator",              _as_str),
+    ("VOXTTS_REFERENCE_WAV",                 "voice",      "reference_wav",                 _as_str_or_none),
+    ("VOXTTS_REFERENCE_TEXT",                "voice",      "reference_text",                _as_str_or_none),
+    # generation
+    ("VOXTTS_SEED",                          "generation", "seed",                          _as_int_or_none),
+    ("VOXTTS_CFG_VALUE",                     "generation", "cfg_value",                     _as_float),
+    ("VOXTTS_INFERENCE_TIMESTEPS",           "generation", "inference_timesteps",           _as_int),
+    ("VOXTTS_NORMALIZE",                     "generation", "normalize",                     _coerce_bool),
+    ("VOXTTS_DENOISE",                       "generation", "denoise",                       _coerce_bool),
+    ("VOXTTS_RETRY_BADCASE",                 "generation", "retry_badcase",                 _coerce_bool),
+    ("VOXTTS_RETRY_BADCASE_MAX_TIMES",       "generation", "retry_badcase_max_times",       _as_int),
+    ("VOXTTS_RETRY_BADCASE_RATIO_THRESHOLD", "generation", "retry_badcase_ratio_threshold", _as_float),
+    ("VOXTTS_MAX_CHARS",                     "generation", "max_chars",                     _as_int_or_none),
+]
+
+
 def _apply_env(cfg: Config) -> None:
-    """Override a handful of values from the environment (deploy-time tweaks)."""
+    """Override any config field from its VOXTTS_* env var (see _ENV_MAP)."""
     env = os.environ
-    if "VOXTTS_HOST" in env:
-        cfg.server.host = env["VOXTTS_HOST"]
-    if "VOXTTS_PORT" in env:
-        cfg.server.port = _coerce_int(env["VOXTTS_PORT"], cfg.server.port)
-    if "VOXTTS_API_KEY" in env:
-        cfg.server.api_key = env["VOXTTS_API_KEY"] or None
-    if "VOXTTS_MODEL" in env:
-        cfg.model.name = env["VOXTTS_MODEL"]
-    if "VOXTTS_HF_HOME" in env:
-        cfg.model.hf_home = env["VOXTTS_HF_HOME"] or None
-    if "VOXTTS_DEVICE" in env:
-        cfg.model.device = env["VOXTTS_DEVICE"] or None
-    if "VOXTTS_OPTIMIZE" in env:
-        cfg.model.optimize = _coerce_bool(env["VOXTTS_OPTIMIZE"], cfg.model.optimize)
-    if "VOXTTS_CUDNN" in env:
-        cfg.model.cudnn_enabled = _coerce_bool(env["VOXTTS_CUDNN"], cfg.model.cudnn_enabled)
-    if "VOXTTS_MATMUL_PRECISION" in env:
-        raw = env["VOXTTS_MATMUL_PRECISION"].strip()
-        cfg.model.matmul_precision = raw or None
-    if "VOXTTS_SEED" in env:
-        raw = env["VOXTTS_SEED"]
-        cfg.generation.seed = None if raw == "" else _coerce_int(raw, cfg.generation.seed)
+    for env_name, section, field_name, coercer in _ENV_MAP:
+        if env_name in env:
+            sec = getattr(cfg, section)
+            setattr(sec, field_name, coercer(env[env_name], getattr(sec, field_name)))
 
 
 def load_config(path: Optional[os.PathLike] = None) -> Config:
