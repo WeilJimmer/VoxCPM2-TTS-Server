@@ -327,6 +327,34 @@ Prompts 1–9 keep a natural-to-quick pace; #10 is intentionally slow/breathy fo
 ASMR. Results vary run to run — try 2–3 seeds and keep the one you like, then
 pin it with a fixed `seed` and `retry_badcase: false`.
 
+### Interactive tuning REPL
+
+`scripts/tune.py` loads the model **once** and lets you iterate on prompt + seed
+without reloading. Changes are in-memory only — your `.env`/`config.yaml` are
+never touched.
+
+```bash
+pip install prompt_toolkit          # optional: arrow-key history (recommended)
+python scripts/tune.py
+```
+
+At the `tune[seed=…]>` prompt:
+
+| Input | Effect |
+|---|---|
+| a number, e.g. `341329004` | set the **seed** |
+| any other text, e.g. `cheerful girl` | set the **voice prompt** (auto-wrapped in `()`) |
+| `/generate` · `/g` | synthesize a wav into `./tune_out/` with the current params |
+| `/random` · `/r` | roll a new random seed |
+| `/text ...` · `/t ...` | change the sentence that gets spoken |
+| `/show` · `/s` | print current params |
+| `/help` · `/h` | help |
+| `Ctrl+C` / `/quit` | exit |
+
+Every change prints a timestamped line (e.g. `(14:03:51) set seed=1234`), and
+up/down arrows scroll through your input history. Files are named
+`tune_out/<time>_seed<seed>.wav` so you can A/B different settings.
+
 ---
 
 ## Reproducing a voice generated elsewhere (e.g. ComfyUI)

@@ -17,6 +17,10 @@ hf_cache/
 *.wav
 voxtts_*.wav
 
+# Tuning REPL output + input history
+tune_out/
+.tune_history
+
 # Local overrides
 config.local.yaml
 .env

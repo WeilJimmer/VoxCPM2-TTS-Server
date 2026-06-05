@@ -34,6 +34,8 @@ dependencies = [
 [project.optional-dependencies]
 # On a Linux GPU server, uvloop/httptools speed up serving.
 standard = ["uvicorn[standard]>=0.27"]
+# Arrow-key history for the interactive tuning REPL (scripts/tune.py).
+tune = ["prompt_toolkit>=3.0"]
 
 [project.urls]
 Repository = "https://nas.zooy.cc:30008/weil/tts-server"
