@@ -44,9 +44,22 @@ class VoxCPMEngine:
         self._device = device
         logger.info("Loading VoxCPM model '%s' on %s …", self.cfg.model.name, device)
 
+        # ── Backend tunables (config-driven) ─────────────────────────
+        m = self.cfg.model
+        if m.matmul_precision:
+            # TF32 matmuls: faster on Ampere+ with negligible quality impact.
+            torch.set_float32_matmul_precision(m.matmul_precision)
+            logger.info("float32_matmul_precision = %s", m.matmul_precision)
+        # Bypass cuDNN when a mismatched system cuDNN would otherwise crash
+        # convolutions (e.g. GB10 Blackwell sublibrary version mismatch).
+        torch.backends.cudnn.enabled = m.cudnn_enabled
+        if not m.cudnn_enabled:
+            logger.warning("cuDNN disabled — convolutions use the native CUDA path")
+
         load_kwargs = dict(
-            load_denoiser=self.cfg.model.load_denoiser,
+            load_denoiser=m.load_denoiser,
             device=device,
+            optimize=m.optimize,
         )
         if self.cfg.model.hf_home:
             # Keep the (large) weight cache on the configured drive.

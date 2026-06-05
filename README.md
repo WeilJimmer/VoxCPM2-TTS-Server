@@ -86,6 +86,9 @@ Everything lives in [`config.yaml`](config.yaml). The most relevant knobs:
 | `generation.inference_timesteps` | Diffusion steps (quality vs. speed). |
 | `generation.max_chars` | Hard cap on input length. |
 | `model.hf_home` | Where to cache weights. |
+| `model.optimize` | `torch.compile` the model (skip on few-SM GPUs). |
+| `model.cudnn_enabled` | Set `false` to bypass cuDNN (see Troubleshooting). |
+| `model.matmul_precision` | `high` = TF32 (faster), `highest` = full fp32. |
 
 A few deploy-time values can also be overridden by env vars: `VOXTTS_HOST`,
 `VOXTTS_PORT`, `VOXTTS_API_KEY`, `VOXTTS_MODEL`, `VOXTTS_HF_HOME`,
@@ -106,6 +109,29 @@ journalctl -u voxcpm-tts -f
 Adjust `User`, `WorkingDirectory`, `ExecStart`, and the `Environment=` lines for
 your box. Then point the waifu client's **TTS server URL** at
 `http://<server>:9824/tts` and tick the **啟用語音 (TTS)** checkbox.
+
+## Troubleshooting
+
+### `CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH` on load (e.g. GB10 Blackwell)
+
+The model loads and the diffusion warmup runs, then it crashes on the first
+conv in the AudioVAE. Cause: the host has a **system cuDNN** in `/lib` whose
+sublibraries get `dlopen`-ed ahead of the pip wheel's, mixing versions. Check:
+
+```bash
+ldconfig -p | grep -i cudnn        # system cuDNN present in /lib/... → the culprit
+```
+
+**Preferred fix** — force torch to use the venv's bundled cuDNN:
+
+```bash
+CUDNN_LIB=$(.venv/bin/python -c "import nvidia.cudnn,os;print(os.path.dirname(nvidia.cudnn.__file__)+'/lib')")
+LD_LIBRARY_PATH="$CUDNN_LIB" python -m voxcpm_tts
+```
+
+Make it permanent via the `Environment=LD_LIBRARY_PATH=...` line in the systemd
+unit. **Fallback** (no cuDNN at all, slightly slower convs): set
+`model.cudnn_enabled: false` in `config.yaml`.
 
 ## Notes
 

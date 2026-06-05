@@ -31,6 +31,11 @@ Environment=VOXTTS_PORT=9824
 Environment=VOXTTS_HF_HOME=/opt/voxcpm-tts/hf_cache
 # Pin to a single GPU if the box has several:
 # Environment=CUDA_VISIBLE_DEVICES=0
+# cuDNN fix for hosts with a SYSTEM cuDNN in /lib (e.g. GB10 Blackwell): force
+# torch to use the venv's bundled cuDNN so its sublibraries don't get shadowed
+# (avoids CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH). Adjust the path to match
+# your venv/python version. Alternative: set model.cudnn_enabled=false in config.
+# Environment=LD_LIBRARY_PATH=/opt/voxcpm-tts/.venv/lib/python3.12/site-packages/nvidia/cudnn/lib
 # Require a shared secret from clients:
 # Environment=VOXTTS_API_KEY=change-me
 

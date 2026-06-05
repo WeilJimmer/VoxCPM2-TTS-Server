@@ -35,6 +35,18 @@ class ModelConfig:
     hf_home: Optional[str] = None
     device: Optional[str] = None
     load_denoiser: bool = False
+    # torch.compile via VoxCPM's optimizer. Big win on datacenter GPUs; little
+    # benefit on few-SM parts (GB10/consumer) and adds startup compile time.
+    optimize: bool = True
+    # cuDNN convolution backend. On brand-new GPUs (e.g. GB10 Blackwell) a
+    # *system* cuDNN can shadow the pip one and crash with a sublibrary version
+    # mismatch — set false to bypass cuDNN (slightly slower convs, no crash).
+    # Prefer fixing LD_LIBRARY_PATH (see README); this is the fallback.
+    cudnn_enabled: bool = True
+    # torch.set_float32_matmul_precision: "high"/"medium" enable TF32 (faster on
+    # Ampere+; negligible quality impact), "highest" = full fp32. null = leave
+    # the torch default untouched.
+    matmul_precision: Optional[str] = "high"
 
 
 @dataclass
