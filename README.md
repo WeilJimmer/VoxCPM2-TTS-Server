@@ -338,22 +338,32 @@ pip install prompt_toolkit          # optional: arrow-key history (recommended)
 python scripts/tune.py
 ```
 
-At the `tune[seed=…]>` prompt:
+At the `tune[seed=… cfg=…]>` prompt, set params with `key=value` (or the
+shorthands), then `/g` to synthesize:
 
 | Input | Effect |
 |---|---|
-| a number, e.g. `341329004` | set the **seed** |
-| any other text, e.g. `cheerful girl` | set the **voice prompt** (auto-wrapped in `()`) |
+| `seed=341329004` (or a bare number) | set the **seed** |
+| `prompt=cheerful girl` (or any bare text) | set the **voice prompt** (auto-wrapped in `()`) |
+| `cfg=3.0` | set **cfg_value** (prompt adherence; higher = obeys more) |
+| `sample=這是要被念出來的文字` | set the **sentence that gets spoken** |
 | `/generate` · `/g` | synthesize a wav into `./tune_out/` with the current params |
 | `/random` · `/r` | roll a new random seed |
-| `/text ...` · `/t ...` | change the sentence that gets spoken |
 | `/show` · `/s` | print current params |
 | `/help` · `/h` | help |
 | `Ctrl+C` / `/quit` | exit |
 
 Every change prints a timestamped line (e.g. `(14:03:51) set seed=1234`), and
 up/down arrows scroll through your input history. Files are named
-`tune_out/<time>_seed<seed>.wav` so you can A/B different settings.
+`tune_out/<time>_seed<seed>.wav`, and **each wav embeds the params it was made
+with in its metadata** (the RIFF INFO *comment* tag), e.g.
+`seed=777; cfg=3.0; prompt=(cheerful…); sample=…` — so you can always recover a
+voice's settings from the file:
+
+```bash
+python -c "import soundfile as sf; print(sf.SoundFile('tune_out/XXXX.wav').comment)"
+# or:  ffprobe tune_out/XXXX.wav
+```
 
 ---
 
