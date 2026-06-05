@@ -90,9 +90,11 @@ Everything lives in [`config.yaml`](config.yaml). The most relevant knobs:
 | `model.cudnn_enabled` | Set `false` to bypass cuDNN (see Troubleshooting). |
 | `model.matmul_precision` | `high` = TF32 (faster), `highest` = full fp32. |
 
-A few deploy-time values can also be overridden by env vars: `VOXTTS_HOST`,
-`VOXTTS_PORT`, `VOXTTS_API_KEY`, `VOXTTS_MODEL`, `VOXTTS_HF_HOME`,
-`VOXTTS_DEVICE`, `VOXTTS_SEED`.
+A few deploy-time values can also be overridden by env vars (handy for keeping
+**one shared `config.yaml`** across machines and differing only via env):
+`VOXTTS_HOST`, `VOXTTS_PORT`, `VOXTTS_API_KEY`, `VOXTTS_MODEL`, `VOXTTS_HF_HOME`,
+`VOXTTS_DEVICE`, `VOXTTS_SEED`, `VOXTTS_OPTIMIZE` (0/1), `VOXTTS_CUDNN` (0/1),
+`VOXTTS_MATMUL_PRECISION`.
 
 ## Deploy on a GPU server (systemd)
 

@@ -80,6 +80,17 @@ def _coerce_int(value, fallback):
         return fallback
 
 
+def _coerce_bool(value, fallback):
+    if value is None:
+        return fallback
+    v = str(value).strip().lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off", ""):
+        return False
+    return fallback
+
+
 def _apply_env(cfg: Config) -> None:
     """Override a handful of values from the environment (deploy-time tweaks)."""
     env = os.environ
@@ -95,6 +106,13 @@ def _apply_env(cfg: Config) -> None:
         cfg.model.hf_home = env["VOXTTS_HF_HOME"] or None
     if "VOXTTS_DEVICE" in env:
         cfg.model.device = env["VOXTTS_DEVICE"] or None
+    if "VOXTTS_OPTIMIZE" in env:
+        cfg.model.optimize = _coerce_bool(env["VOXTTS_OPTIMIZE"], cfg.model.optimize)
+    if "VOXTTS_CUDNN" in env:
+        cfg.model.cudnn_enabled = _coerce_bool(env["VOXTTS_CUDNN"], cfg.model.cudnn_enabled)
+    if "VOXTTS_MATMUL_PRECISION" in env:
+        raw = env["VOXTTS_MATMUL_PRECISION"].strip()
+        cfg.model.matmul_precision = raw or None
     if "VOXTTS_SEED" in env:
         raw = env["VOXTTS_SEED"]
         cfg.generation.seed = None if raw == "" else _coerce_int(raw, cfg.generation.seed)
