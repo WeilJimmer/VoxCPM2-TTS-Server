@@ -210,7 +210,7 @@ optional and fall back to config:
 | Field | Type | Default | Meaning |
 |---|---|---|---|
 | `text` | string | **(required)** | The text to speak |
-| `seed` | int | config `generation.seed` | Override the RNG seed for this call |
+| `seed` | int | config `generation.seed` | Override the RNG seed for this call (any int — auto-folded into `[0, 2³²-1]`) |
 | `format` | string | config `output.format` (`mp3`) | `mp3` → `audio/mpeg`, `wav` → `audio/wav` |
 | `paren_mode` | string | config `output.paren_mode` (`strip`) | How to treat `()`/`（）` in `text` — see below |
 

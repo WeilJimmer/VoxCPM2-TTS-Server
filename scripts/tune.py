@@ -43,7 +43,8 @@ from voxcpm_tts.engine import VoxCPMEngine          # noqa: E402
 DEFAULT_SAMPLE = "你好呀，我是你的老婆 Ariel，今天也要好好加油喔～"
 OUT_DIR = PROJECT_ROOT / "tune_out"
 HISTORY_FILE = PROJECT_ROOT / ".tune_history"
-SEED_MAX = 2**31 - 1
+SEED_MAX = 2**31 - 1      # random seeds stay well within range
+SEED_SPACE = 2**32        # numpy's valid seed range is [0, 2**32-1]
 
 # Explicit `key=value` assignment (keys are case-insensitive; `text` == `sample`).
 ASSIGN_RE = re.compile(r"^(seed|prompt|cfg|sample|text)\s*=\s*(.*)$", re.IGNORECASE | re.DOTALL)
@@ -239,9 +240,16 @@ def main() -> None:
             elif field == "sample":
                 state["sample"] = v
                 log(f"set sample={v!r}")
-            else:  # seed / cfg
-                state[field] = v
-                log(f"set {field}={v}")
+            elif field == "seed":
+                folded = v % SEED_SPACE          # fold too-large/negative into range
+                state["seed"] = folded
+                if folded != v:
+                    log(f"set seed={folded} (folded from {v} into [0, 2^32-1])")
+                else:
+                    log(f"set seed={folded}")
+            else:  # cfg
+                state["cfg"] = v
+                log(f"set cfg={v}")
         elif action == "cmd":
             name, arg = value
             if name in ("generate", "g"):

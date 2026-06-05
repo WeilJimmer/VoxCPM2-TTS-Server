@@ -35,6 +35,9 @@ _FORMATS = {
     "wav": ("WAV", "PCM_16", "audio/wav"),
 }
 
+# numpy's RNG seed must be in [0, 2**32 - 1]; any other int is folded in.
+_SEED_SPACE = 2**32
+
 
 class VoxCPMEngine:
     def __init__(self, cfg: Config):
@@ -99,7 +102,16 @@ class VoxCPMEngine:
         return self._device
 
     # ── Helpers ──────────────────────────────────────────────────────
+    @staticmethod
+    def _normalize_seed(seed: Optional[int]) -> Optional[int]:
+        """Fold any int seed into numpy's valid range [0, 2**32-1] (handles
+        too-large and negative seeds). None stays None."""
+        if seed is None:
+            return None
+        return int(seed) % _SEED_SPACE
+
     def _seed_everything(self, seed: Optional[int]) -> None:
+        seed = self._normalize_seed(seed)
         if seed is None:
             return
         import torch
@@ -165,7 +177,8 @@ class VoxCPMEngine:
             logger.debug("Truncated text to %d chars", max_chars)
 
         full_text = self._build_text(text)
-        use_seed = seed if seed is not None else self.cfg.generation.seed
+        # Normalize up-front so the value we log/embed is the one actually used.
+        use_seed = self._normalize_seed(seed if seed is not None else self.cfg.generation.seed)
         gen = self.cfg.generation
         voice = self.cfg.voice
 
