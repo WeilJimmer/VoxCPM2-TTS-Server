@@ -96,6 +96,14 @@ A few deploy-time values can also be overridden by env vars (handy for keeping
 `VOXTTS_DEVICE`, `VOXTTS_SEED`, `VOXTTS_OPTIMIZE` (0/1), `VOXTTS_CUDNN` (0/1),
 `VOXTTS_MATMUL_PRECISION`.
 
+These can live in a **`.env`** in the project root (loaded automatically at
+startup via python-dotenv; real shell env vars still win). Copy the template
+and uncomment the block for your machine:
+
+```bash
+cp .env.example .env   # then edit — GB10 and Windows presets are inside
+```
+
 ## Deploy on a GPU server (systemd)
 
 A unit is provided at [`systemd/voxcpm-tts.service`](systemd/voxcpm-tts.service)
@@ -127,9 +135,15 @@ ldconfig -p | grep -i cudnn        # system cuDNN present in /lib/... → the cu
 **Preferred fix** — force torch to use the venv's bundled cuDNN:
 
 ```bash
-CUDNN_LIB=$(.venv/bin/python -c "import nvidia.cudnn,os;print(os.path.dirname(nvidia.cudnn.__file__)+'/lib')")
+# nvidia.cudnn is a namespace package (__file__ is None) — use __path__:
+CUDNN_LIB=$(.venv/bin/python -c "import nvidia.cudnn,os;print(os.path.join(list(nvidia.cudnn.__path__)[0],'lib'))")
 LD_LIBRARY_PATH="$CUDNN_LIB" python -m voxcpm_tts
 ```
+
+> Note: `LD_LIBRARY_PATH` must be set **before** launch (the dynamic linker
+> reads it at process start), so it can't come from `.env`. If you'd rather not
+> deal with it, the `.env` route is simpler: set `VOXTTS_CUDNN=0` to bypass
+> cuDNN entirely.
 
 Make it permanent via the `Environment=LD_LIBRARY_PATH=...` line in the systemd
 unit. **Fallback** (no cuDNN at all, slightly slower convs): set

@@ -15,10 +15,17 @@ from typing import Optional, List
 
 import yaml
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # optional dependency — env vars still work without it
+    load_dotenv = None
+
 logger = logging.getLogger("voxcpm-tts.config")
 
 # config.yaml lives at the project root (parent of this package).
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.yaml"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.yaml"
+DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 
 
 @dataclass
@@ -120,6 +127,12 @@ def _apply_env(cfg: Config) -> None:
 
 def load_config(path: Optional[os.PathLike] = None) -> Config:
     """Load the config from YAML, falling back to defaults for any missing keys."""
+    # Load a local .env first so its VOXTTS_* vars feed the env overrides below.
+    # Real shell env vars take precedence (override=False).
+    if load_dotenv is not None and DEFAULT_ENV_PATH.exists():
+        load_dotenv(DEFAULT_ENV_PATH, override=False)
+        logger.info("Loaded env from %s", DEFAULT_ENV_PATH)
+
     path = Path(path) if path else DEFAULT_CONFIG_PATH
     data = {}
     if path.exists():
