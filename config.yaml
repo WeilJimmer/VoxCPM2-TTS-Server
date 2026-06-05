@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────
+#  VoxCPM2 TTS service — configuration
+#  All knobs you are likely to tweak live here. Restart the service
+#  after editing. Every value can also be overridden by an env var
+#  (see voxcpm_tts/config.py for the names, e.g. VOXTTS_PORT).
+# ─────────────────────────────────────────────────────────────────
+
+server:
+  host: "0.0.0.0"
+  port: 9824
+  # Optional shared secret. When set, clients must send it as the
+  # `X-API-Key` header. Leave empty/null to disable auth.
+  api_key: null
+  # Allowed CORS origins for the browser client. "*" = any origin.
+  cors_origins: ["*"]
+
+model:
+  # HuggingFace repo id, or a local directory path to a downloaded model.
+  name: "openbmb/VoxCPM2"
+  # Where HuggingFace caches the weights. Keep this on a drive with room
+  # (the 2B weights are ~4–5 GB). null = default (~/.cache/huggingface).
+  hf_home: null
+  # "cuda", "cuda:0", or "cpu". null = auto (cuda if available).
+  device: null
+  # Load the optional speech denoiser (ZipEnhancer, +~hundreds of MB of
+  # VRAM/disk). Off for TTS — we synthesize clean audio, nothing to denoise.
+  load_denoiser: false
+
+voice:
+  # ── Voice design prompt ──────────────────────────────────────────
+  # VoxCPM2 "voice design": a parenthetical description prepended to the
+  # text steers the timbre WITHOUT a reference clip. Tune this to taste.
+  # English descriptors tend to be the most reliable; a Chinese one also
+  # works. Leave empty to disable and let the model free-run.
+  prompt: "(A gentle, soft and sweet young girl's voice, warm and affectionate)"
+  # Chinese alternative (swap into `prompt` above if you prefer):
+  #   prompt: "(溫柔甜美、輕柔的少女聲線，語氣親暱)"
+
+  # ── Reference voice clone (optional, most consistent) ────────────
+  # Path to a short clean .wav of the target voice. When set, the service
+  # clones it instead of (or in addition to) the voice-design prompt —
+  # this is the most stable way to pin one identity. null = disabled.
+  reference_wav: null
+  # Transcript of reference_wav for "ultimate cloning" (highest fidelity).
+  # null = ordinary cloning.
+  reference_text: null
+
+generation:
+  # Fixed RNG seed → reproducible, stable timbre across calls. VoxCPM has
+  # no seed arg, so we seed torch/numpy/random ourselves before each run.
+  # Set to null for a fresh random voice every time.
+  seed: 20240601
+  # Classifier-free guidance: higher = sticks closer to the voice prompt.
+  cfg_value: 2.0
+  # Diffusion steps: higher = better quality but slower (10 is the default).
+  inference_timesteps: 10
+  # Run VoxCPM's text normalizer (numbers, punctuation → spoken form).
+  normalize: true
+  # Hard cap on input length (characters). Longer text is truncated so a
+  # single reply can't tie up the GPU for too long. null = no cap.
+  max_chars: 400

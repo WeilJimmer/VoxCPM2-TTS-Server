@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Model cache / weights (huge — keep out of git)
+models/
+hf_cache/
+*.safetensors
+*.ckpt
+*.pt
+
+# Generated / temp audio — never retained
+*.wav
+voxtts_*.wav
+
+# Local overrides
+config.local.yaml
+.env

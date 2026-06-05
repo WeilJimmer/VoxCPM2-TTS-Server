@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────
+#  systemd unit for the VoxCPM2 TTS service (GPU server, Linux).
+#
+#  This file is provided but NOT installed automatically. To install on
+#  the GPU server:
+#
+#    sudo cp systemd/voxcpm-tts.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now voxcpm-tts
+#    journalctl -u voxcpm-tts -f          # follow logs
+#
+#  Edit User/WorkingDirectory/ExecStart to match your deployment.
+# ─────────────────────────────────────────────────────────────────
+[Unit]
+Description=VoxCPM2 TTS service (waifu daemon voice)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tts
+Group=tts
+WorkingDirectory=/opt/voxcpm-tts
+# Use the project virtualenv's python.
+ExecStart=/opt/voxcpm-tts/.venv/bin/python -m voxcpm_tts
+
+# ── Tunables (override config.yaml without editing it) ──────────────
+Environment=VOXTTS_HOST=0.0.0.0
+Environment=VOXTTS_PORT=9824
+# Keep the (large) HF weight cache on a roomy disk:
+Environment=VOXTTS_HF_HOME=/opt/voxcpm-tts/hf_cache
+# Pin to a single GPU if the box has several:
+# Environment=CUDA_VISIBLE_DEVICES=0
+# Require a shared secret from clients:
+# Environment=VOXTTS_API_KEY=change-me
+
+Restart=on-failure
+RestartSec=5
+# Model load + first download can be slow; give it room before health checks.
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

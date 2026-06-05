@@ -1,0 +1,25 @@
+# ── VoxCPM2 TTS service dependencies ────────────────────────────────
+# IMPORTANT: install a CUDA build of PyTorch FIRST (it is not listed here
+# because the right wheel depends on your CUDA version). For CUDA 12.4:
+#
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+#
+# then:  pip install -r requirements.txt
+
+# TTS engine (pulls transformers, etc.)
+voxcpm
+
+# HTTP service
+fastapi>=0.110
+# On Linux, `uvicorn[standard]` adds uvloop/httptools for extra speed. On
+# Windows, the [standard] extra pulls `watchfiles`, whose console-script can
+# hit a file-lock during install — plain `uvicorn` is enough (we don't use
+# --reload). Swap to `uvicorn[standard]>=0.27` on the GPU server if you like.
+uvicorn>=0.27
+
+# Audio / numerics
+soundfile>=0.12
+numpy>=1.24
+
+# Config
+pyyaml>=6.0
