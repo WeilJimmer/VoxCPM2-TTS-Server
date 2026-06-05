@@ -298,6 +298,35 @@ VOXTTS_RETRY_BADCASE=0
   optionally its transcript at `voice.reference_text`); the timbre then comes
   from the audio, independent of GPU/precision.
 
+### Controlling speech rate
+
+Voice-design has **no numeric speed knob** — pace is steered entirely by the
+prompt. `gentle`, `soft`, `soothing`, `whisper`, `calm` slow it down; add
+`lively`, `upbeat`, `brisk`, `energetic`, or an explicit *"at a natural, quick
+pace"* to speed it up. Raising `cfg_value` (→ 3.0) makes it obey the cue more.
+
+### Prompt cookbook — English young-girl voices
+
+Set any of these as `voice.prompt` (or `VOXTTS_VOICE_PROMPT`). Keep the
+surrounding parentheses — that's what marks it as a voice-design prompt.
+
+| # | Style | Prompt |
+|---|---|---|
+| 1 | Cheerful (natural pace) | `(A sweet young girl's voice, warm and gentle, speaking clearly at a natural, lively pace)` |
+| 2 | Bright & upbeat | `(A bright, cheerful teenage girl's voice, friendly and energetic, clear and quick)` |
+| 3 | Bubbly / playful | `(A playful, bubbly girl's voice, light and quick, full of energy and giggles)` |
+| 4 | Cute anime | `(A cute anime-style girl's voice, high and bright, cheerful and fast-paced)` |
+| 5 | Confident schoolgirl | `(A confident teenage girl's voice, crisp and articulate, casual and natural)` |
+| 6 | Warm & caring | `(A warm, affectionate girl's voice, sweet and caring, smooth at a comfortable pace)` |
+| 7 | Lively & expressive | `(A lively schoolgirl's voice, perky and animated, quick and expressive)` |
+| 8 | Shy & tender | `(A shy young girl's voice, soft and tender, a little timid but clear)` |
+| 9 | Gentle (still brisk) | `(A gentle young girl's voice, soft yet bright, speaking at a relaxed but lively pace)` |
+| 10 | Soft ASMR (slow on purpose) | `(A soft, soothing young girl's voice, calm and intimate, gentle whisper)` |
+
+Prompts 1–9 keep a natural-to-quick pace; #10 is intentionally slow/breathy for
+ASMR. Results vary run to run — try 2–3 seeds and keep the one you like, then
+pin it with a fixed `seed` and `retry_badcase: false`.
+
 ---
 
 ## Reproducing a voice generated elsewhere (e.g. ComfyUI)
