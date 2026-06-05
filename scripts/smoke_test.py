@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Weil <me@weils.net>
 """Local smoke test: load VoxCPM2 and synthesize one line to out.wav.
 
 Run from the project root after installing deps:

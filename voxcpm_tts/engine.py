@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Weil <me@weils.net>
 """VoxCPM2 inference engine.
 
 Loads the model once into VRAM and exposes a thread-safe ``synthesize`` that

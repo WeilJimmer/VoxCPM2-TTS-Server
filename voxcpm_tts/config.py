@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Weil <me@weils.net>
 """Configuration loader for the VoxCPM2 TTS service.
 
 Reads config.yaml (next to the project root by default) into typed dataclasses,

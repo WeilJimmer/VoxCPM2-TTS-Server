@@ -1,0 +1,12 @@
+VoxCPM2 TTS Service
+Copyright 2026 Weil <me@weils.net>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This product bundles no third-party source, but at runtime depends on
+VoxCPM2 (https://huggingface.co/openbmb/VoxCPM2), © OpenBMB, also
+licensed under the Apache License, Version 2.0.

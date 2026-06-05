@@ -373,6 +373,17 @@ a Linux GPU server with triton is much faster.
 
 ## Notes
 
-- Apache-2.0 model (VoxCPM2). Synthesized audio is never retained on disk.
+- Synthesized audio is never retained on disk.
 - Voice-design output can vary run to run; the fixed seed pins it, a reference
   clip nails it.
+
+## License
+
+Licensed under the **Apache License, Version 2.0** — see [`LICENSE`](LICENSE)
+and [`NOTICE`](NOTICE).
+
+```
+Copyright 2026 Weil <me@weils.net>
+```
+
+VoxCPM2 itself is also Apache-2.0 (© OpenBMB).

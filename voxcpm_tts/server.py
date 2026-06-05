@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Weil <me@weils.net>
 """FastAPI server exposing the VoxCPM2 engine.
 
 Endpoints
