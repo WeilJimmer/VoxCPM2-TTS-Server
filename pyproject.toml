@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voxcpm-tts"
+version = "0.1.0"
+description = "VoxCPM2 TTS microservice for the waifu-daemon Live2D companion"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Weil", email = "me@weils.net" }]
+keywords = ["tts", "text-to-speech", "voxcpm", "fastapi", "live2d", "waifu"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Framework :: FastAPI",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Operating System :: OS Independent",
+]
+
+# NOTE: a CUDA build of PyTorch should be installed separately (it is pulled in
+# transitively by `voxcpm`, but the default wheel is CPU-only). See the README:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+dependencies = [
+    "voxcpm",
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "soundfile>=0.12",
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# On a Linux GPU server, uvloop/httptools speed up serving.
+standard = ["uvicorn[standard]>=0.27"]
+
+[project.urls]
+Repository = "https://nas.zooy.cc:30008/weil/tts-server"
+
+[project.scripts]
+voxcpm-tts = "voxcpm_tts.__main__:main"
+
+[tool.setuptools]
+packages = ["voxcpm_tts"]
+license-files = ["LICENSE", "NOTICE"]

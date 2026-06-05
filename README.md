@@ -114,6 +114,19 @@ On brand-new GPUs (e.g. GB10 Blackwell) you may hit a cuDNN error on first load 
 see [Troubleshooting](#troubleshooting). The quick fix is `VOXTTS_CUDNN=0` in
 `.env`.
 
+### Install as a package (optional)
+
+Instead of `requirements.txt`, you can install the project itself (gives a
+`voxcpm-tts` console command equivalent to `python -m voxcpm_tts`):
+
+```bash
+pip install .                 # or:  pip install -e .   (editable)
+pip install ".[standard]"     # Linux: adds uvloop/httptools for faster serving
+voxcpm-tts                     # start the service
+```
+
+(Install a CUDA build of torch first, as above.)
+
 ---
 
 ## First run & verify
