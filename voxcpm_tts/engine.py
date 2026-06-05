@@ -101,7 +101,7 @@ class VoxCPMEngine:
         prompt = (self.cfg.voice.prompt or "").strip()
         stripped = text.lstrip()
         if prompt and not stripped.startswith("("):
-            return f"{prompt} {text}"
+            return f"{prompt}{self.cfg.voice.prompt_separator}{text}"
         return text
 
     # ── Synthesis ────────────────────────────────────────────────────
@@ -135,13 +135,24 @@ class VoxCPMEngine:
                 cfg_value=gen.cfg_value,
                 inference_timesteps=gen.inference_timesteps,
                 normalize=gen.normalize,
-                denoise=False,
+                denoise=gen.denoise,
+                retry_badcase=gen.retry_badcase,
+                retry_badcase_max_times=gen.retry_badcase_max_times,
+                retry_badcase_ratio_threshold=gen.retry_badcase_ratio_threshold,
             )
             if voice.reference_wav:
                 kwargs["reference_wav_path"] = voice.reference_wav
                 if voice.reference_text:
                     kwargs["prompt_wav_path"] = voice.reference_wav
                     kwargs["prompt_text"] = voice.reference_text
+            # Log the EXACT call so a result can be diffed against another tool
+            # (e.g. ComfyUI) when reproducing a voice.
+            logger.info(
+                "generate seed=%s cfg=%s steps=%s normalize=%s denoise=%s "
+                "retry_badcase=%s text=%r",
+                use_seed, gen.cfg_value, gen.inference_timesteps, gen.normalize,
+                gen.denoise, gen.retry_badcase, full_text,
+            )
             wav = self._model.generate(**kwargs)
 
         wav = np.asarray(wav, dtype=np.float32).reshape(-1)

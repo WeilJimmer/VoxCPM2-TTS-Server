@@ -120,6 +120,27 @@ Adjust `User`, `WorkingDirectory`, `ExecStart`, and the `Environment=` lines for
 your box. Then point the waifu client's **TTS server URL** at
 `http://<server>:9824/tts` and tick the **啟用語音 (TTS)** checkbox.
 
+## Reproducing a voice generated elsewhere (e.g. ComfyUI)
+
+Same prompt + seed but a *different* voice usually means the `generate()` call
+isn't byte-identical to the other tool — not a hardware issue. On the same GPU,
+matching every input reproduces the result. Check each of these against the
+other tool:
+
+1. **The exact text string.** VoxCPM voice-design prepends `(description)` to the
+   text; a single space difference (`(desc)text` vs `(desc) text`) changes
+   tokenization. Set `voice.prompt_separator` to match, or set `voice.prompt: ""`
+   and send the full `(description)text` string yourself so it's identical.
+2. **`generation.retry_badcase`** — VoxCPM's default `true` silently re-rolls
+   "bad" generations, breaking seed reproducibility. Set it `false` on both
+   sides for strict determinism.
+3. **`cfg_value`, `inference_timesteps`, `normalize`, `denoise`** — match all four.
+4. **Seed** — set the same `generation.seed`.
+
+The service logs the exact call it makes (`generate seed=… cfg=… steps=…
+text=…`) at INFO level — compare that line with the other tool's parameters to
+find the mismatch.
+
 ## Troubleshooting
 
 ### `CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH` on load (e.g. GB10 Blackwell)

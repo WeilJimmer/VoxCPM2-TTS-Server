@@ -59,6 +59,10 @@ class ModelConfig:
 @dataclass
 class VoiceConfig:
     prompt: str = ""
+    # String inserted between the "(prompt)" and the text. VoxCPM examples use
+    # either "" (no space) or " " — match whatever produced your good result
+    # elsewhere, since it changes tokenization.
+    prompt_separator: str = " "
     reference_wav: Optional[str] = None
     reference_text: Optional[str] = None
 
@@ -69,6 +73,14 @@ class GenerationConfig:
     cfg_value: float = 2.0
     inference_timesteps: int = 10
     normalize: bool = True
+    # Run the optional denoiser on the OUTPUT. Requires model.load_denoiser=true.
+    denoise: bool = False
+    # VoxCPM auto-retries "bad cases" with changed conditions — great for
+    # robustness, but it silently perturbs a fixed-seed result. Set false for
+    # strict, reproducible output (e.g. to match a ComfyUI generation).
+    retry_badcase: bool = True
+    retry_badcase_max_times: int = 3
+    retry_badcase_ratio_threshold: float = 6.0
     max_chars: Optional[int] = 400
 
 

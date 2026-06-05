@@ -51,6 +51,11 @@ voice:
   prompt: "(A gentle, soft and sweet young girl's voice, warm and affectionate)"
   # Chinese alternative (swap into `prompt` above if you prefer):
   #   prompt: "(溫柔甜美、輕柔的少女聲線，語氣親暱)"
+  # What goes between "(prompt)" and the text. " " (a space) or "" (none) —
+  # this changes tokenization, so to reproduce a result from another tool
+  # match its style exactly. Tip: to feed byte-identical text, set prompt: ""
+  # here and send the full "(描述)內容" string as the request text.
+  prompt_separator: " "
 
   # ── Reference voice clone (optional, most consistent) ────────────
   # Path to a short clean .wav of the target voice. When set, the service
@@ -72,6 +77,14 @@ generation:
   inference_timesteps: 10
   # Run VoxCPM's text normalizer (numbers, punctuation → spoken form).
   normalize: true
+  # Run the denoiser on the OUTPUT (needs model.load_denoiser: true above).
+  denoise: false
+  # VoxCPM auto-retries "bad" generations with changed conditions. Robust, but
+  # it silently breaks fixed-seed reproducibility. Set false for strict,
+  # repeatable output — e.g. when matching a voice generated in ComfyUI.
+  retry_badcase: true
+  retry_badcase_max_times: 3
+  retry_badcase_ratio_threshold: 6.0
   # Hard cap on input length (characters). Longer text is truncated so a
   # single reply can't tie up the GPU for too long. null = no cap.
   max_chars: 400
