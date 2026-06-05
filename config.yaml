@@ -95,3 +95,15 @@ generation:
   # metadata (RIFF INFO "comment" tag). Handy for debugging what the live
   # service produced; read it back with `soundfile`/`ffprobe`.
   embed_meta: false
+
+output:
+  # Default response audio format: "mp3" or "wav". A request may override it
+  # with {"format": "wav"}.
+  format: mp3
+  # How to treat parentheses in the REQUEST text. VoxCPM reads a leading "(...)"
+  # as a voice-design prompt, so the spoken text's own brackets can be
+  # misinterpreted. A request may override with {"paren_mode": "..."}:
+  #   strip  (default) — drop the brackets, keep the words (→ a space)
+  #   remove           — drop the brackets AND their inner text
+  #   keep             — leave the text untouched
+  paren_mode: strip

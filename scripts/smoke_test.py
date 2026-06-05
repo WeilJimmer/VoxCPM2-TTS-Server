@@ -33,7 +33,7 @@ def main() -> None:
     print(f"[smoke] loaded in {time.time() - t0:.1f}s on {engine.device}, sr={engine.sample_rate}")
 
     t0 = time.time()
-    wav_bytes, sr = engine.synthesize(text)
+    wav_bytes, sr, _ = engine.synthesize(text, fmt="wav")
     dur = time.time() - t0
     out = Path(__file__).resolve().parent.parent / "smoke_out.wav"
     out.write_bytes(wav_bytes)

@@ -90,11 +90,24 @@ class GenerationConfig:
 
 
 @dataclass
+class OutputConfig:
+    # Default response audio format: "mp3" or "wav". Overridable per request.
+    format: str = "mp3"
+    # How to treat parentheses in the request text (VoxCPM reads a leading
+    # "(...)" as a voice-design prompt, so the spoken text's own brackets can be
+    # misinterpreted): "strip" = drop the brackets but keep the words (replace
+    # with a space), "remove" = drop brackets AND their inner text, "keep" =
+    # leave untouched. Overridable per request.
+    paren_mode: str = "strip"
+
+
+@dataclass
 class Config:
     server: ServerConfig = field(default_factory=ServerConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
     voice: VoiceConfig = field(default_factory=VoiceConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    output: OutputConfig = field(default_factory=OutputConfig)
 
 
 # ── Env-var coercers ────────────────────────────────────────────────
@@ -180,6 +193,9 @@ _ENV_MAP = [
     ("VOXTTS_RETRY_BADCASE_RATIO_THRESHOLD", "generation", "retry_badcase_ratio_threshold", _as_float),
     ("VOXTTS_MAX_CHARS",                     "generation", "max_chars",                     _as_int_or_none),
     ("VOXTTS_EMBED_META",                    "generation", "embed_meta",                    _coerce_bool),
+    # output
+    ("VOXTTS_FORMAT",                        "output",     "format",                        _as_str),
+    ("VOXTTS_PAREN_MODE",                    "output",     "paren_mode",                    _as_str),
 ]
 
 
@@ -219,6 +235,7 @@ def load_config(path: Optional[os.PathLike] = None) -> Config:
         generation=GenerationConfig(
             **{**GenerationConfig().__dict__, **(data.get("generation") or {})}
         ),
+        output=OutputConfig(**{**OutputConfig().__dict__, **(data.get("output") or {})}),
     )
     _apply_env(cfg)
 

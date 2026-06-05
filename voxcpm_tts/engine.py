@@ -11,6 +11,7 @@ stable voice.
 from __future__ import annotations
 
 import io
+import re
 import random
 import logging
 import threading
@@ -22,6 +23,17 @@ import soundfile as sf
 from .config import Config
 
 logger = logging.getLogger("voxcpm-tts.engine")
+
+# Parentheses in the request text (half- and full-width). VoxCPM reads a leading
+# "(...)" as a voice-design prompt, so the spoken text's own brackets matter.
+_PAREN_PAIR_RE = re.compile(r"[\(（][^\(（\)）]*[\)）]")   # a (...) pair with its content
+_BRACKET_CHARS_RE = re.compile(r"[\(\)（）]")             # just the bracket characters
+_WS_RE = re.compile(r"\s+")
+
+_FORMATS = {
+    "mp3": ("MP3", "MPEG_LAYER_III", "audio/mpeg"),
+    "wav": ("WAV", "PCM_16", "audio/wav"),
+}
 
 
 class VoxCPMEngine:
@@ -106,12 +118,34 @@ class VoxCPMEngine:
             return f"{prompt}{self.cfg.voice.prompt_separator}{text}"
         return text
 
-    # ── Synthesis ────────────────────────────────────────────────────
-    def synthesize(self, text: str, seed: Optional[int] = None) -> Tuple[bytes, int]:
-        """Generate speech for ``text`` and return (wav_bytes, sample_rate).
+    @staticmethod
+    def _process_parens(text: str, mode: Optional[str]) -> str:
+        """Handle parentheses in the spoken text per ``mode``:
+        "keep" → unchanged, "remove" → drop (...) and its content,
+        "strip" (default) → drop only the bracket chars, keep the words.
+        """
+        mode = (mode or "strip").strip().lower()
+        if mode == "keep":
+            return text
+        if mode == "remove":
+            out = _PAREN_PAIR_RE.sub(" ", text)
+        else:  # strip
+            out = _BRACKET_CHARS_RE.sub(" ", text)
+        return _WS_RE.sub(" ", out).strip()
 
-        Thread-safe: serialized on the GPU lock. ``seed`` overrides the config
-        seed for this one call (None → use the configured seed).
+    # ── Synthesis ────────────────────────────────────────────────────
+    def synthesize(
+        self,
+        text: str,
+        seed: Optional[int] = None,
+        fmt: Optional[str] = None,
+        paren_mode: Optional[str] = None,
+    ) -> Tuple[bytes, int, str]:
+        """Generate speech and return (audio_bytes, sample_rate, media_type).
+
+        Thread-safe: serialized on the GPU lock. All args except ``text`` are
+        optional and fall back to config: ``seed`` (None → configured seed),
+        ``fmt`` ("mp3"/"wav"), ``paren_mode`` ("strip"/"remove"/"keep").
         """
         if not self.ready:
             raise RuntimeError("engine not loaded")
@@ -119,6 +153,11 @@ class VoxCPMEngine:
         text = (text or "").strip()
         if not text:
             raise ValueError("empty text")
+
+        # Handle the spoken text's own parentheses before adding the voice prompt.
+        text = self._process_parens(text, paren_mode or self.cfg.output.paren_mode)
+        if not text:
+            raise ValueError("text empty after parenthesis processing")
 
         max_chars = self.cfg.generation.max_chars
         if max_chars and len(text) > max_chars:
@@ -175,17 +214,23 @@ class VoxCPMEngine:
             }
         else:
             meta = None
-        return self._encode_wav(wav, meta), self._sample_rate
 
-    def _encode_wav(self, wav: np.ndarray, meta: Optional[dict]) -> bytes:
-        """Encode a float32 waveform to 16-bit WAV bytes, optionally embedding
-        the given RIFF INFO string tags (title/artist/software/comment)."""
+        fmt = (fmt or self.cfg.output.format or "mp3").strip().lower()
+        if fmt not in _FORMATS:
+            fmt = "mp3"
+        audio_bytes = self._encode(wav, fmt, meta)
+        return audio_bytes, self._sample_rate, _FORMATS[fmt][2]
+
+    def _encode(self, wav: np.ndarray, fmt: str, meta: Optional[dict]) -> bytes:
+        """Encode a float32 waveform to ``fmt`` ("mp3"/"wav") bytes, optionally
+        embedding the given string tags (RIFF INFO / ID3, best-effort)."""
+        sf_format, subtype, _ = _FORMATS.get(fmt, _FORMATS["mp3"])
         buf = io.BytesIO()
         if not meta:
-            sf.write(buf, wav, self._sample_rate, format="WAV", subtype="PCM_16")
+            sf.write(buf, wav, self._sample_rate, format=sf_format, subtype=subtype)
             return buf.getvalue()
         with sf.SoundFile(buf, "w", samplerate=self._sample_rate, channels=1,
-                          format="WAV", subtype="PCM_16") as f:
+                          format=sf_format, subtype=subtype) as f:
             for attr, val in meta.items():
                 try:
                     setattr(f, attr, val)

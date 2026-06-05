@@ -162,19 +162,26 @@ UTF-8 file**:
 '{"text":"你好，我是你的老婆 Ariel～"}' | Out-File -Encoding utf8 req.json
 curl.exe -X POST http://localhost:9824/tts `
   -H "Content-Type: application/json" `
-  --data-binary "@req.json" --output speech.wav
+  --data-binary "@req.json" --output speech.mp3
 ```
 
 **bash (Linux/macOS):**
 
 ```bash
+# Minimal — only `text` is required (defaults: mp3, seed from config, paren strip):
 curl -X POST http://localhost:9824/tts \
   -H "Content-Type: application/json" \
-  -d '{"text":"你好，我是你的老婆 Ariel～","seed":20240601}' \
+  -d '{"text":"你好，我是你的老婆 Ariel～"}' --output speech.mp3
+
+# With optional overrides:
+curl -X POST http://localhost:9824/tts \
+  -H "Content-Type: application/json" \
+  -d '{"text":"你好(笑)","seed":20240601,"format":"wav","paren_mode":"remove"}' \
   --output speech.wav
 ```
 
-`seed` is optional and overrides the configured seed for that one call.
+**Only `text` is required** — `seed`, `format`, and `paren_mode` are all optional
+(see the parameter table below).
 
 ### Connect the waifu client
 
@@ -191,13 +198,38 @@ speech bubble stays visible for the audio's duration.
 
 ### API reference
 
-| Method | Path | Body | Returns |
+| Method | Path | Returns |
+|---|---|---|
+| `GET`  | `/`       | service info JSON |
+| `GET`  | `/health` | `status`, `device`, `sample_rate`, VRAM free/total |
+| `POST` | `/tts`    | the synthesized audio (streamed, then the temp file is deleted) |
+
+**`POST /tts` request body** (JSON). Only `text` is required; the rest are
+optional and fall back to config:
+
+| Field | Type | Default | Meaning |
 |---|---|---|---|
-| `GET`  | `/`       | — | service info JSON |
-| `GET`  | `/health` | — | `status`, `device`, `sample_rate`, VRAM free/total |
-| `POST` | `/tts`    | `{"text": "...", "seed": 123?}` | `audio/wav` (streamed, then the temp file is deleted) |
+| `text` | string | **(required)** | The text to speak |
+| `seed` | int | config `generation.seed` | Override the RNG seed for this call |
+| `format` | string | config `output.format` (`mp3`) | `mp3` → `audio/mpeg`, `wav` → `audio/wav` |
+| `paren_mode` | string | config `output.paren_mode` (`strip`) | How to treat `()`/`（）` in `text` — see below |
 
 If `server.api_key` is set, send it as the `X-API-Key` request header.
+
+#### About `paren_mode` (and VoxCPM's "voice prompt")
+
+VoxCPM has **no separate system-prompt field**. Instead, a parenthetical at the
+*start* of the text is read as a **voice-design prompt** (e.g.
+`(a cheerful young girl)`). This service adds the configured `voice.prompt`
+automatically, so your `text` doesn't need it — but if your `text` contains its
+own brackets, they can be misinterpreted or spoken oddly. `paren_mode` controls
+the request text's brackets (half- and full-width):
+
+| `paren_mode` | `"好的(笑)世界"` becomes | Use when |
+|---|---|---|
+| `strip` *(default)* | `好的 笑 世界` | keep the words, just drop the brackets |
+| `remove` | `好的 世界` | drop parenthetical asides entirely |
+| `keep` | `好的(笑)世界` | you want full control (e.g. supply your own leading voice prompt) |
 
 ### Embedding params in the output (debugging)
 
@@ -208,7 +240,7 @@ Read it back from any returned file:
 
 ```bash
 curl -s -X POST http://localhost:9824/tts -H "Content-Type: application/json" \
-  -d '{"text":"hi"}' --output out.wav
+  -d '{"text":"hi","format":"wav"}' --output out.wav
 python -c "import soundfile as sf; print(sf.SoundFile('out.wav').comment)"
 # or:  ffprobe out.wav
 ```
@@ -281,6 +313,13 @@ env var. Bools accept `1/0`, `true/false`, `yes/no`, `on/off`.
 | `retry_badcase_ratio_threshold` | `VOXTTS_RETRY_BADCASE_RATIO_THRESHOLD` | `6.0` | Bad-case detection threshold |
 | `max_chars` | `VOXTTS_MAX_CHARS` | `400` | Hard cap on input length; blank = no cap |
 | `embed_meta` | `VOXTTS_EMBED_META` | `false` | Embed the params into each wav's metadata (debug) |
+
+#### `output:`
+
+| `config.yaml` key | Env var | Default | Meaning |
+|---|---|---|---|
+| `format` | `VOXTTS_FORMAT` | `mp3` | Default response format (`mp3`/`wav`); per-request `format` overrides |
+| `paren_mode` | `VOXTTS_PAREN_MODE` | `strip` | Default bracket handling (`strip`/`remove`/`keep`); per-request `paren_mode` overrides |
 
 `_or_none` fields (`api_key`, `hf_home`, `device`, `matmul_precision`,
 `reference_wav`, `reference_text`, `seed`, `max_chars`) treat a **blank** env

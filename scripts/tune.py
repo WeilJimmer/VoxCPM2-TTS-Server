@@ -176,7 +176,8 @@ def generate(engine: VoxCPMEngine, state: dict) -> None:
     log(f"generating… seed={state['seed']} cfg={state['cfg']} prompt={state['prompt']!r}")
     t0 = time.time()
     try:
-        wav_bytes, sr = engine.synthesize(state["sample"], seed=state["seed"])
+        # Always WAV here: lossless for A/B, and we add our own metadata below.
+        wav_bytes, sr, _ = engine.synthesize(state["sample"], seed=state["seed"], fmt="wav")
     except KeyboardInterrupt:
         log("generation interrupted")
         return

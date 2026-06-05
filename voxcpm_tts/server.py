@@ -53,8 +53,13 @@ app.add_middleware(
 
 
 class TTSRequest(BaseModel):
+    # Only `text` is required; everything else is optional and falls back to config.
     text: str = Field(..., description="Text to synthesize")
     seed: Optional[int] = Field(None, description="Override the configured seed")
+    format: Optional[str] = Field(None, description='Output format: "mp3" (default) or "wav"')
+    paren_mode: Optional[str] = Field(
+        None, description='Parenthesis handling: "strip" (default) / "remove" / "keep"'
+    )
 
 
 def require_api_key(x_api_key: Optional[str] = Header(None)) -> None:
@@ -111,8 +116,8 @@ async def tts(req: TTSRequest):
 
     loop = asyncio.get_event_loop()
     try:
-        wav_bytes, sr = await loop.run_in_executor(
-            _executor, engine.synthesize, text, req.seed
+        audio_bytes, sr, media_type = await loop.run_in_executor(
+            _executor, engine.synthesize, text, req.seed, req.format, req.paren_mode
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -121,15 +126,16 @@ async def tts(req: TTSRequest):
         raise HTTPException(status_code=500, detail=f"synthesis failed: {e}")
 
     # Write to a temp file, stream it, delete it once sent.
-    fd, path = tempfile.mkstemp(suffix=".wav", prefix="voxtts_")
+    ext = "mp3" if media_type == "audio/mpeg" else "wav"
+    fd, path = tempfile.mkstemp(suffix="." + ext, prefix="voxtts_")
     with os.fdopen(fd, "wb") as f:
-        f.write(wav_bytes)
+        f.write(audio_bytes)
 
-    logger.info("Synthesized %d bytes @ %d Hz → %s", len(wav_bytes), sr, path)
+    logger.info("Synthesized %d bytes @ %d Hz (%s) → %s", len(audio_bytes), sr, media_type, path)
     return FileResponse(
         path,
-        media_type="audio/wav",
-        filename="speech.wav",
+        media_type=media_type,
+        filename=f"speech.{ext}",
         background=BackgroundTask(_safe_unlink, path),
         headers={"Cache-Control": "no-store"},
     )
