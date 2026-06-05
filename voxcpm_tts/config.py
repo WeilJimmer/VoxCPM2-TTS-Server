@@ -84,6 +84,9 @@ class GenerationConfig:
     retry_badcase_max_times: int = 3
     retry_badcase_ratio_threshold: float = 6.0
     max_chars: Optional[int] = 400
+    # Embed the generation params (seed/cfg/steps/prompt/text…) into each wav's
+    # metadata (RIFF INFO comment) — handy for debugging the live service.
+    embed_meta: bool = False
 
 
 @dataclass
@@ -176,6 +179,7 @@ _ENV_MAP = [
     ("VOXTTS_RETRY_BADCASE_MAX_TIMES",       "generation", "retry_badcase_max_times",       _as_int),
     ("VOXTTS_RETRY_BADCASE_RATIO_THRESHOLD", "generation", "retry_badcase_ratio_threshold", _as_float),
     ("VOXTTS_MAX_CHARS",                     "generation", "max_chars",                     _as_int_or_none),
+    ("VOXTTS_EMBED_META",                    "generation", "embed_meta",                    _coerce_bool),
 ]
 
 

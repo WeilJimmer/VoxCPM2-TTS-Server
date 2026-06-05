@@ -162,6 +162,34 @@ class VoxCPMEngine:
         # the model occasionally overshooting [-1, 1]).
         np.clip(wav, -1.0, 1.0, out=wav)
 
+        if gen.embed_meta:
+            meta = {
+                "comment": (
+                    f"seed={use_seed}; cfg={gen.cfg_value}; steps={gen.inference_timesteps}; "
+                    f"normalize={gen.normalize}; denoise={gen.denoise}; "
+                    f"retry_badcase={gen.retry_badcase}; text={full_text}"
+                ),
+                "title": f"VoxCPM2 seed={use_seed}",
+                "artist": "VoxCPM2",
+                "software": "voxcpm-tts",
+            }
+        else:
+            meta = None
+        return self._encode_wav(wav, meta), self._sample_rate
+
+    def _encode_wav(self, wav: np.ndarray, meta: Optional[dict]) -> bytes:
+        """Encode a float32 waveform to 16-bit WAV bytes, optionally embedding
+        the given RIFF INFO string tags (title/artist/software/comment)."""
         buf = io.BytesIO()
-        sf.write(buf, wav, self._sample_rate, format="WAV", subtype="PCM_16")
-        return buf.getvalue(), self._sample_rate
+        if not meta:
+            sf.write(buf, wav, self._sample_rate, format="WAV", subtype="PCM_16")
+            return buf.getvalue()
+        with sf.SoundFile(buf, "w", samplerate=self._sample_rate, channels=1,
+                          format="WAV", subtype="PCM_16") as f:
+            for attr, val in meta.items():
+                try:
+                    setattr(f, attr, val)
+                except Exception:  # noqa: BLE001 - metadata is best-effort
+                    pass
+            f.write(wav)
+        return buf.getvalue()

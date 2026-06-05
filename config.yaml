@@ -91,3 +91,7 @@ generation:
   # Hard cap on input length (characters). Longer text is truncated so a
   # single reply can't tie up the GPU for too long. null = no cap.
   max_chars: 400
+  # Embed the generation params (seed/cfg/steps/prompt/text…) into each wav's
+  # metadata (RIFF INFO "comment" tag). Handy for debugging what the live
+  # service produced; read it back with `soundfile`/`ffprobe`.
+  embed_meta: false

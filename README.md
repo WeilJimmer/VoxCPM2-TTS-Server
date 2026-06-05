@@ -199,6 +199,22 @@ speech bubble stays visible for the audio's duration.
 
 If `server.api_key` is set, send it as the `X-API-Key` request header.
 
+### Embedding params in the output (debugging)
+
+Set `generation.embed_meta: true` (or `VOXTTS_EMBED_META=1`) and every `/tts`
+response wav carries the params it was generated with in its metadata (RIFF INFO
+`comment` tag), e.g. `seed=555; cfg=2.0; steps=10; …; text=…`. Off by default.
+Read it back from any returned file:
+
+```bash
+curl -s -X POST http://localhost:9824/tts -H "Content-Type: application/json" \
+  -d '{"text":"hi"}' --output out.wav
+python -c "import soundfile as sf; print(sf.SoundFile('out.wav').comment)"
+# or:  ffprobe out.wav
+```
+
+(The same embedding is always on for the [tuning REPL](#interactive-tuning-repl).)
+
 ---
 
 ## Configuration
@@ -264,6 +280,7 @@ env var. Bools accept `1/0`, `true/false`, `yes/no`, `on/off`.
 | `retry_badcase_max_times` | `VOXTTS_RETRY_BADCASE_MAX_TIMES` | `3` | Max retries |
 | `retry_badcase_ratio_threshold` | `VOXTTS_RETRY_BADCASE_RATIO_THRESHOLD` | `6.0` | Bad-case detection threshold |
 | `max_chars` | `VOXTTS_MAX_CHARS` | `400` | Hard cap on input length; blank = no cap |
+| `embed_meta` | `VOXTTS_EMBED_META` | `false` | Embed the params into each wav's metadata (debug) |
 
 `_or_none` fields (`api_key`, `hf_home`, `device`, `matmul_precision`,
 `reference_wav`, `reference_text`, `seed`, `max_chars`) treat a **blank** env
